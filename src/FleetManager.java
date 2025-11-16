@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.PrintWriter;
 
 /**
- * FleetManager using only CSC120 topics:
  * Arrays, Strings, loops, conditionals, and simple file I/O.
  */
 public class FleetManager {
