@@ -1,10 +1,7 @@
 /**
+ * Represents a Boat with simple fields.
  * @author Asher Berman
  * @version V1.2
- */
-
-/**
- * Represents a Boat with simple fields.
  */
 public class Boat {
 
