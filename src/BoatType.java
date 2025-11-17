@@ -21,10 +21,10 @@ public enum BoatType {
         if (s.equals("SAILING") || s.equals("S")) return SAILING;
         if (s.equals("POWER") || s.equals("P")) return POWER;
         return null;
-    }
+    }//End of fromString method
 
     @Override
     public String toString() {
         return this.name();
-    }
-}
+    }//End of toString method
+}//End of BoatType enumeration

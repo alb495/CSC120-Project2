@@ -16,7 +16,7 @@ public class Boat implements Serializable {
     /** Enum for allowed boat types */
     public enum BoatType {
         POWER, SAILING
-    }
+    }//End of enumeration for BoatType
 
     private final BoatType type;
     private final String name;
@@ -41,7 +41,7 @@ public class Boat implements Serializable {
         this.lengthFeet = lengthFeet;
         this.purchasePrice = purchasePrice;
         this.spent = 0.0;
-    }
+    }//End of boat construction
 
     /** CSV → Boat factory method */
     public static Boat fromCSV(String csv) {
@@ -59,25 +59,25 @@ public class Boat implements Serializable {
             return new Boat(type, name, year, make, len, paid);
         } catch (Exception e) {
             return null;
-        }
-    }
+        }//End of exception handling
+    }//End of fromCSV method
 
     /** Boat → CSV */
     public String toCSV() {
         return type + "," + name + "," + year + "," +
                 makeModel + "," + lengthFeet + "," + purchasePrice;
-    }
+    }//End of toCSV method
 
     /** Adds an expense if within remaining budget */
     public boolean addExpense(double amount) {
         if (amount <= getRemainingBudget()) {
             spent += amount;
             return true;
-        }
+        }//End of if statement
         return false;
-    }
+    }//End of addExpense method
 
-    // ----------- Getters -----------
+    //Getters
 
     public BoatType getType() { return type; }
     public String getName() { return name; }
@@ -88,7 +88,7 @@ public class Boat implements Serializable {
     public double getTotalExpenses() { return spent; }
     public double getRemainingBudget() { return purchasePrice - spent; }
 
-    // ----------- Print Formatting -----------
+    //Print Formatting
 
     @Override
     public String toString() {
@@ -102,5 +102,5 @@ public class Boat implements Serializable {
                 purchasePrice,
                 spent
         );
-    }
-}
+    }//End of toString method
+}//End of Boat class implementing Serializable
