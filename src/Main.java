@@ -1,198 +1,250 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
+//End of imports
 
 /**
- * Main - Main program
- * Handles loading, saving, printing, and modifying a fleet of boats.
- * This class contains the application main() method.
- * @author Asher Berman
- * @version 2.2
+ * Entry point and controller for the Fleet Management System.
+ * Handles loading, saving, and all user-driven operations on the fleet.
+ * @author : Asher Berman
+ * @version : 2.3
  */
 public class Main {
 
-    //Constants
-
-    private static final String CSV_FILE = "fleet.csv";
-    private static final String DB_FILE = "fleet.db";
-    private static final String MENU =
-            "(P)rint, (A)dd, (R)emove, (E)xpense, e(X)it : ";
-
-    //Fields
-
-    private final List<Boat> fleet = new ArrayList<>();
+    /** Scanner used for all console input */
     private final Scanner in = new Scanner(System.in);
 
-    //Main Loop
+    /** List storing all boats currently managed */
+    private final List<Boat> fleet = new ArrayList<>();
 
-    public void run() {
+    /** File path for serialized fleet storage */
+    private static final String DB_FILE = "fleet.db";
+
+    /** File path for CSV fleet storage */
+    private static final String CSV_FILE = "fleet.csv";
+
+    /**
+     * Program entry point. Creates a Main instance and starts execution.
+     * @param args command-line arguments (unused)
+     */
+    public static void main(String[] args) {
+        new Main().run();
+    }//End of main method (Calls the run method)
+
+    /**
+     * Main execution loop of the fleet system.
+     * Loads data, displays the menu, and dispatches user actions.
+     */
+    private void run() {
+        loadFleet();
+
         System.out.println("Welcome to the Fleet Management System");
-        System.out.println("--------------------------------------");
+        System.out.println("--------------------------------------\n");
 
-        String cmd;
+        boolean done = false;
+        while (!done) {
+            System.out.print("(P)rint, (A)dd, (R)emove, (E)xpense, e(X)it : ");
+            String choice = in.nextLine().trim().toUpperCase();
 
-        do {
-            System.out.print("\n" + MENU);
-            cmd = in.nextLine().trim().toUpperCase();
-
-            switch (cmd) {
-
-                case "P":
-                    printFleet();
-                    break;
-
-                case "A":
-                    addBoatMenu();
-                    break;
-
-                case "R":
-                    removeBoatMenu();
-                    break;
-
-                case "E":
-                    expenseBoatMenu();
-                    break;
-
-                case "X":
-                    System.out.println("\nExiting the Fleet Management System");
-                    saveToDB();
-                    break;
-
+            switch (choice) {
+                case "P": printFleet(); break;
+                case "A": addBoat(); break;
+                case "R": removeBoat(); break;
+                case "E": expenseBoat(); break;
+                case "X": done = true; break;
                 default:
                     System.out.println("Invalid menu option, try again");
-            }//End of switch statement
+            }//Switch case for menu
+        }//End of not finished while loop
 
-        } while (!cmd.equals("X"));
+        System.out.println("\nExiting the Fleet Management System");
+        saveFleet();
     }//End of run method
 
-    //Load in file
+    // ----------LOADING LOGIC----------
 
-    public void loadFromCSV() {
-        File f = new File(CSV_FILE);
+    /**
+     * Attempts to load the fleet from DB, then CSV, else loads defaults.
+     */
+    private void loadFleet() {
+        if (!loadDB()) {
+            System.out.println("Error loading DB — fallback to CSV.");
+            if (!loadCSV()) {
+                System.out.println("CSV load failed.\n");
+                loadDefaultFleet();
+            }//Not possible to load CSV condition
+        }//End of DB load check condition
+    }//End of loadFleet method
 
-        if (!f.exists()) {
-            System.out.println("CSV not found — loading sample fleet.");
-            loadSampleFleet();
-            return;
-        }//End of if condition
+    /**
+     * Loads fleet data from the serialized DB file.
+     * @return true if load successful, false otherwise
+     */
+    private boolean loadDB() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DB_FILE))) {
+            Object obj = ois.readObject();
+            if (obj instanceof List<?>) {
+                List<?> raw = (List<?>) obj;
+                for (Object o : raw) {
+                    if (o instanceof Boat) fleet.add((Boat) o);
+                }//End of add loop
+                return true;
+            }//End of instance check condition
+        } catch (Exception ignored) {}//End of exception handling
+        return false;
+    }//End of loadDB method
 
-        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+    /**
+     * Loads fleet data from a CSV file.
+     * @return true if fleet successfully loaded, false otherwise
+     */
+    private boolean loadCSV() {
+        try (BufferedReader br = new BufferedReader(new FileReader(CSV_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 Boat b = Boat.fromCSV(line);
                 if (b != null) fleet.add(b);
             }//End of while loop
-            System.out.println("Loaded from CSV.");
-        } catch (IOException e) {
-            System.out.println("Error reading CSV — loading sample fleet.");
-            loadSampleFleet();
-        }//End of exception handling
-    }//End of loadFromCSV method
+            return !fleet.isEmpty();
+        } catch (Exception ignored) {}//End of exception handling
+        return false;
+    }//End of loadCSV method
 
-    private void loadSampleFleet() {
-        fleet.add(new Boat(Boat.BoatType.POWER,"Big Brother",2019,"Mako",20,12989.56));
-        fleet.add(new Boat(Boat.BoatType.SAILING,"Moon Glow",1973,"Bristol",30,5500.00));
-        fleet.add(new Boat(Boat.BoatType.SAILING,"Osita",1988,"Tartan",40,11500.07));
-        fleet.add(new Boat(Boat.BoatType.POWER,"Rescue II",2016,"Zodiac",12,8900.00));
-    }//End of loadSampleFleet method
+    /**
+     * Loads a default fleet when no stored data can be read.
+     */
+    private void loadDefaultFleet() {
+        fleet.add(new Boat(Boat.BoatType.POWER, "Big Brother", 2019, "Mako", 20, 12989.56));
+        fleet.add(new Boat(Boat.BoatType.SAILING, "Moon Glow", 1973, "Bristol", 30, 5500.00));
+        fleet.add(new Boat(Boat.BoatType.SAILING, "Osita", 1988, "Tartan", 40, 11500.07));
+        fleet.add(new Boat(Boat.BoatType.POWER, "Rescue II", 2016, "Zodiac", 12, 8900.00));
+    }//End of loadDefaultFleet method
 
-    //Save file
+    /**
+     * Saves the fleet to both DB and CSV representations.
+     */
+    private void saveFleet() {
+        saveDB();
+        saveCSV();
+    }//End of saveFleet method
 
-    public void saveToDB() {
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(DB_FILE))) {
-            out.writeObject(fleet);
-        } catch (Exception e) {
-            System.out.println("Error saving database.");
-        }//End of exception handling
-    }//End of saveToDB method
+    /**
+     * Writes the fleet to the serialized DB file.
+     */
+    private void saveDB() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DB_FILE))) {
+            oos.writeObject(fleet);
+        } catch (Exception ignored) {}//End of exception handling
+    }//End of saveDB method
 
-    //Menu
+    /**
+     * Writes the fleet to CSV format.
+     */
+    private void saveCSV() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(CSV_FILE))) {
+            for (Boat b : fleet) pw.println(b.toCSV());
+        } catch (Exception ignored) {}//End of exception handling
+    }//End of saveCSV method
 
+    // ----------MENU FUNCTIONS----------
+
+    /**
+     * Prints the fleet report, including totals paid and spent.
+     */
     private void printFleet() {
         System.out.println("\nFleet report:");
-        double totalPaid = 0;
-        double totalSpent = 0;
+        double totalPaid = 0.0;
+        double totalSpent = 0.0;
 
         for (Boat b : fleet) {
             System.out.println(b);
             totalPaid += b.getPurchasePrice();
             totalSpent += b.getTotalExpenses();
-        }//End of for loop
+        }//End of print loop
 
         System.out.printf(
-                "    %-7s %-21s %-4s %-12s %-3s : Paid $ %10.2f : Spent $ %10.2f\n",
-                "Total", "", "", "", "",
+                "    Total                                             : Paid $ %10.2f : Spent $ %10.2f\n\n",
                 totalPaid, totalSpent
         );
     }//End of printFleet method
 
-    private void addBoatMenu() {
+    /**
+     * Prompts user for CSV boat data and adds a new boat to the fleet.
+     */
+    private void addBoat() {
         System.out.print("Please enter the new boat CSV data          : ");
-        String csv = in.nextLine();
+        String line = in.nextLine().trim();
 
-        Boat b = Boat.fromCSV(csv);
+        Boat b = Boat.fromCSV(line);
         if (b == null) {
-            System.out.println("Invalid CSV format.");
+            System.out.println("Invalid CSV format.\n");
             return;
-        }//End of if statement
+        }//End of bad CSV response
+
         fleet.add(b);
-    }//End of addBoatmenu
+        saveFleet();
+    }//End of addBoat method
 
-    private void removeBoatMenu() {
+    /**
+     * Removes a boat from the fleet by name.
+     */
+    private void removeBoat() {
         System.out.print("Which boat do you want to remove?           : ");
-        String name = in.nextLine();
+        String name = in.nextLine().trim();
 
-        Boat b = findBoat(name);
-        if (b == null) {
-            System.out.println("Cannot find boat " + name);
+        Boat found = findBoat(name);
+        if (found == null) {
+            System.out.println("Cannot find boat " + name + "\n");
             return;
-        }
+        }//End of boat existence checking
 
-        fleet.remove(b);
-    }//End of removeBoatMenu method
+        fleet.remove(found);
+        saveFleet();
+    }//End of removeBoat method
 
-    private void expenseBoatMenu() {
+    /**
+     * Adds an expense to a specified boat if the budget allows.
+     */
+    private void expenseBoat() {
         System.out.print("Which boat do you want to spend on?         : ");
-        String name = in.nextLine();
+        String name = in.nextLine().trim();
 
         Boat b = findBoat(name);
         if (b == null) {
-            System.out.println("Cannot find boat " + name);
+            System.out.println("Cannot find boat " + name + "\n");
             return;
-        }//End of if statement
+        }//End of boat existence check
 
         System.out.print("How much do you want to spend?              : ");
-        String line = in.nextLine();
-
+        double amt;
         try {
-            double amt = Double.parseDouble(line);
-            if (b.addExpense(amt)) {
-                System.out.printf("Expense authorized, $%.2f spent.\n",
-                        b.getTotalExpenses());
-            } else {
-                System.out.printf("Expense not permitted, only $%.2f left to spend.\n",
-                        b.getRemainingBudget());
-            }//End of if and else conditions
+            amt = Double.parseDouble(in.nextLine().trim());
         } catch (Exception e) {
-            System.out.println("Invalid amount.");
+            System.out.println("Invalid amount.\n");
+            return;
         }//End of exception handling
-    }//End of expenseBoatMenu method
 
-    //Helpers
+        if (b.addExpense(amt)) {
+            System.out.printf("Expense authorized, $%.2f spent.\n\n", b.getTotalExpenses());
+            saveFleet();
+        } else {
+            System.out.printf(
+                    "Expense not permitted, only $%.2f left to spend.\n\n",
+                    b.getRemainingBudget()
+            );
+        }//End of else segment
+    }//End of expenseBoat method
 
+    /**
+     * Finds a boat in the fleet by its name.
+     * @param name the name to search for
+     * @return the matching Boat, or null if not found
+     */
     private Boat findBoat(String name) {
+        String target = name.trim().toLowerCase();//target definition
         for (Boat b : fleet) {
-            if (b.getName().equalsIgnoreCase(name)) return b;
+            if (b.getName().toLowerCase().equals(target))
+                return b;
         }//End of for loop
         return null;
     }//End of findBoat method
-
-    //Main Entry
-
-    public static void main(String[] args) {
-        Main fm = new Main();
-        fm.loadFromCSV();
-        fm.run();
-    }//End of main method
 }//End of Main class

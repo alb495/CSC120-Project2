@@ -1,8 +1,8 @@
 /**
  * BoatType enumeration: the two allowed boat types for this project.
  *
- * Author: Asher Berman
- * Version: 1.0
+ * @author : Asher Berman
+ * @version : 1.2
  */
 public enum BoatType {
     SAILING,
